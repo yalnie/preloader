@@ -44,3 +44,40 @@ jobs:
         with:
           name: preloader-arm64
           path: build-arm64/**/*.so
+
+  build-armv7:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27b
+
+      - name: Configure CMake for Android armv7
+        run: |
+          cmake -S . -B build-armv7 \
+            -DANDROID_ABI=armeabi-v7a \
+            -DANDROID_PLATFORM=android-26 \
+            -DANDROID_NDK=${{ steps.setup-ndk.outputs.ndk-path }} \
+            -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build preloader
+        run: cmake --build build-armv7 --config Release -j$(nproc)
+
+      - name: Upload libpreloader.so
+        uses: actions/upload-artifact@v4
+        with:
+          name: preloader-armv7
+          path: build-armv7/**/*.so
